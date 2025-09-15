@@ -64,14 +64,29 @@ def rule_metadata(a, b):
         return 0, f"Rule1 Metadata: ERROR {e} -> 0/30"
 
 # Rule 2: ssdeep (max 10) 
+# def rule_ssdeep(a, b):
+#     """
+#     Fuzzy hash similarity of whole files. Images saved differently can break this,
+#     so keep the weight low.
+#     """
+#     try:
+#         h1 = ssdeep.hash_from_file(a)
+#         h2 = ssdeep.hash_from_file(b)
+#         sim = ssdeep.compare(h1, h2)  # 0..100
+#         if   sim >= 80: pts = 10
+#         elif sim >= 50: pts = 6
+#         elif sim >= 25: pts = 3
+#         else:           pts = 0
+#         return pts, f"Rule2 ssdeep: sim={sim} -> {pts}/10"
+#     except Exception as e:
+#         return 0, f"Rule2 ssdeep: ERROR {e} -> 0/10"
+
+# rules.py
+
 def rule_ssdeep(a, b):
-    """
-    Fuzzy hash similarity of whole files. Images saved differently can break this,
-    so keep the weight low.
-    """
     try:
-        h1 = ssdeep.hash_from_file(a)
-        h2 = ssdeep.hash_from_file(b)
+        h1 = ssdeep.hash_from_file(str(a))
+        h2 = ssdeep.hash_from_file(str(b))
         sim = ssdeep.compare(h1, h2)  # 0..100
         if   sim >= 80: pts = 10
         elif sim >= 50: pts = 6
