@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 import ssdeep
 
-# tiny helpers 
+# helper: open image and fix rotation if EXIF says it's rotated
 def _open_image_fix_orientation(path):
     img = Image.open(path)
     try:
@@ -17,18 +17,19 @@ def _open_image_fix_orientation(path):
         pass
     return img
 
+# helper: load image in grayscale with a size cap
 def _gray_cv2(path, cap=900):
     g = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
-    if g is None:  # fallback via PIL
+    if g is None:  # if cv2 fails, fallback to PIL
         g = np.array(_open_image_fix_orientation(path).convert("L"))
     h, w = g.shape[:2]
     m = max(h, w)
-    if m > cap:
+    if m > cap:  # shrink if too big
         scale = cap / float(m)
         g = cv2.resize(g, (int(w*scale), int(h*scale)), interpolation=cv2.INTER_AREA)
     return g
 
-# Rule 1: Metadata (max 30)
+# Rule 1: compare metadata (dimensions + file size)
 def rule_metadata(a, b):
     try:
         ia = _open_image_fix_orientation(a)
@@ -36,7 +37,7 @@ def rule_metadata(a, b):
         w1, h1 = ia.size
         w2, h2 = ib.size
 
-        # dimension closeness: higher if both width and height are close
+        # closeness = how similar the two numbers are
         def closeness(x, y):
             if max(x, y) == 0: return 0.0
             return 1.0 - abs(x - y) / float(max(x, y))
@@ -44,7 +45,7 @@ def rule_metadata(a, b):
         c = (closeness(w1, w2) + closeness(h1, h2)) / 2.0
         dim_pts = int(round(20 * c))
 
-        # file size ratio: rough signal, small weight
+        # also check file size ratio
         s1, s2 = os.path.getsize(a), os.path.getsize(b)
         ratio = min(s1, s2) / float(max(s1, s2)) if max(s1, s2) else 0.0
         if   ratio >= 0.90: size_pts = 10
@@ -58,12 +59,12 @@ def rule_metadata(a, b):
     except Exception as e:
         return 0, f"Rule1 Metadata: ERROR {e} -> 0/30"
 
-# Rule 2: ssdeep (max 10) 
+# Rule 2: fuzzy hashing with ssdeep
 def rule_ssdeep(a, b):
     try:
         h1 = ssdeep.hash_from_file(a)
         h2 = ssdeep.hash_from_file(b)
-        sim = ssdeep.compare(h1, h2)  # 0..100
+        sim = ssdeep.compare(h1, h2)  # value between 0..100
         if   sim >= 80: pts = 10
         elif sim >= 50: pts = 6
         elif sim >= 25: pts = 3
@@ -72,7 +73,7 @@ def rule_ssdeep(a, b):
     except Exception as e:
         return 0, f"Rule2 ssdeep: ERROR {e} -> 0/10"
 
-# Rule 3: Template match (max 60) 
+# Rule 3: template matching (structural similarity)
 def _best_corr(tpl, img):
     if tpl.shape[0] > img.shape[0] or tpl.shape[1] > img.shape[1]:
         return 0.0
@@ -84,17 +85,16 @@ def rule_template(a, b):
         ga = _gray_cv2(a)
         gb = _gray_cv2(b)
 
-        # pick the smaller one as template
+        # use the smaller image as the template
         if ga.size <= gb.size:
             tpl0, img = ga, gb
         else:
             tpl0, img = gb, ga
 
-        # scales to try (small set keeps it fast)
-        scales = (1.0, 0.9, 0.8)
+        scales = (1.0, 0.9, 0.8)  # try a few sizes
         best = 0.0
 
-        # raw templates
+        # normal template matching
         for s in scales:
             th = int(tpl0.shape[0] * s); tw = int(tpl0.shape[1] * s)
             if th < 20 or tw < 20:  
@@ -102,7 +102,7 @@ def rule_template(a, b):
             tpl = cv2.resize(tpl0, (tw, th), interpolation=cv2.INTER_AREA)
             best = max(best, _best_corr(tpl, img))
 
-        # edge-based (brightness-robust)
+        # also compare edge maps (less sensitive to brightness)
         e_tpl0 = cv2.Canny(tpl0, 50, 150)
         e_img  = cv2.Canny(img,  50, 150)
         for s in scales:
@@ -112,7 +112,7 @@ def rule_template(a, b):
             e_tpl = cv2.resize(e_tpl0, (tw, th), interpolation=cv2.INTER_AREA)
             best = max(best, _best_corr(e_tpl, e_img))
 
-        # simple piecewise mapping to 0..60
+        # map correlation value to points (0..60)
         if   best >= 0.85: pts = 60
         elif best >= 0.80: pts = 54
         elif best >= 0.75: pts = 48
