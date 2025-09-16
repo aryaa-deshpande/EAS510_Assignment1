@@ -392,7 +392,3 @@ Rule1 Metadata: dims 256x256 vs 2000x3000 (≈0.11) + size_ratio=0.11 -> 2/30
 Rule2 ssdeep: sim=0 -> 0/10
 Rule3 Template: best_corr=0.03 -> 0/60
 Final Score: 2/100 -> REJECT to original_09.jpg
-
-Final Summary:
-Modified images: 33/60
-Random images false positives: 0/5
