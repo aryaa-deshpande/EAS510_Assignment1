@@ -37,6 +37,6 @@ python test_system.py | tee results.txt
 - Random images: No false positives (0/5).
 
 ## KEY TAKEAWAYS:
-The system demonstrates how a rule-based expert system can combine different sources of evidence to make transparent forensic decisions. While ssdeep did not contribute in this case, metadata and template matching together provided strong coverage of common manipulations. The approach met the assignment’s target accuracy and highlighted the strengths and limitations of early AI-style reasoning.
+Metadata and template matching did most of the work and handled brightness, compression, and format changes well. Ssdeep didn’t really help here, which makes sense for images. With the small template tweak, the system cleared the 60% accuracy mark and gave me a good sense of where rule-based approaches work and where they fall short.
 
 
