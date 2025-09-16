@@ -30,11 +30,6 @@ def _gray_cv2(path, cap=900):
 
 # Rule 1: Metadata (max 30)
 def rule_metadata(a, b):
-    """
-    Up to 30 points:
-      - 0..20 from dimension closeness
-      - 0..10 from file size ratio
-    """
     try:
         ia = _open_image_fix_orientation(a)
         ib = _open_image_fix_orientation(b)
@@ -65,10 +60,6 @@ def rule_metadata(a, b):
 
 # Rule 2: ssdeep (max 10) 
 def rule_ssdeep(a, b):
-    """
-    Fuzzy hash similarity of whole files. Images saved differently can break this,
-    so keep the weight low.
-    """
     try:
         h1 = ssdeep.hash_from_file(a)
         h2 = ssdeep.hash_from_file(b)
@@ -89,10 +80,6 @@ def _best_corr(tpl, img):
     return float(cv2.minMaxLoc(res)[1])
 
 def rule_template(a, b):
-    """
-    Multi-scale template matching with an extra edge-based pass.
-    Maps best correlation to 0..60.
-    """
     try:
         ga = _gray_cv2(a)
         gb = _gray_cv2(b)
