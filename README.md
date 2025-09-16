@@ -32,7 +32,7 @@ python test_system.py | tee results.txt
 
 ## WHAT I FOUND:
 - Brightness, compression, and PNG conversions: Detected reliably.
-- Cropping: 75% crops were sometimes detected, 25–50% crops were very challenging. A slight template threshold adjustment improved results, pushing overall accuracy above the assignment’s ≥60% requirement.
+- Cropping: 75% crops were sometimes detected, 25–50% crops were very challenging. A slight template threshold adjustment improved results, pushing overall accuracy above the assignment’s ~60% requirement.
 - ssdeep: As expected, did not help — similarity was always 0 due to drastic byte-level changes in modified images.
 - Random images: No false positives (0/5).
 
